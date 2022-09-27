@@ -8,11 +8,14 @@ from pydantic import BaseModel, EmailStr
 from motor.motor_asyncio import AsyncIOMotorCollection
 import models
 
+
 class ObjetoNaoEncontrado(Exception):
     """Quando for feito uma update e o matched_count == 0"""
 
+
 class ObjetoNaoModificado(Exception):
     """Quando o update for igual a um existente"""
+
 
 class BaseAdapter:
     async def create(
@@ -38,10 +41,10 @@ class BaseAdapter:
         )
         if updated.matched_count == 0:
             raise ObjetoNaoEncontrado
-        if updated.modified_count  == 0:
-            raise ObjetoNaoModificado 
+        if updated.modified_count == 0:
+            raise ObjetoNaoModificado
         return data
-    
+
     async def get(
         self, collection: AsyncIOMotorCollection, id: Any, key: str
     ) -> BaseModel:
@@ -103,22 +106,35 @@ class UserAdapter(BaseAdapter):
     async def delete(self, collection: AsyncIOMotorCollection, email: EmailStr):
         return await super().delete(collection, email, key="email")
 
-    async def remover_endereco(self, collection: AsyncIOMotorCollection, endereco: models.Endereco, email):
+    async def remover_endereco(
+        self, collection: AsyncIOMotorCollection, endereco: models.Endereco, email
+    ):
         updated = await collection.update_one(
-            {"email": email}, {"$pull": {"endereco": {"rua": endereco.rua, "cep": endereco.cep, "cidade": endereco.cidade, "estado": endereco.estado }}}
+            {"email": email},
+            {
+                "$pull": {
+                    "endereco": {
+                        "rua": endereco.rua,
+                        "cep": endereco.cep,
+                        "cidade": endereco.cidade,
+                        "estado": endereco.estado,
+                    }
+                }
+            },
         )
         if updated.matched_count == 0:
             raise ObjetoNaoEncontrado
-        if updated.modified_count  == 0:
-            raise ObjetoNaoModificado 
+        if updated.modified_count == 0:
+            raise ObjetoNaoModificado
         return endereco
+
 
 class ProductAdapter(BaseAdapter):
     async def create(
         self, collection: AsyncIOMotorCollection, data: models.Produto
     ) -> models.Produto:
         return await super().create(collection, data)
-    
+
     async def get(
         self, collection: AsyncIOMotorCollection, id_produto: int
     ) -> models.Produto:
@@ -126,4 +142,3 @@ class ProductAdapter(BaseAdapter):
 
     async def delete(self, collection: AsyncIOMotorCollection, id_produto: int):
         return await super().delete(collection, id_produto, key="id")
-
