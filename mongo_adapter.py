@@ -1,7 +1,4 @@
-import email
-from json import encoder
 import logging
-from venv import create
 from pymongo.errors import DuplicateKeyError, PyMongoError
 from typing import List, Any
 from pydantic import BaseModel, EmailStr

@@ -1,4 +1,3 @@
-from curses import resize_term
 from pymongo.errors import PyMongoError
 from fastapi import FastAPI, Depends, HTTPException
 import models
@@ -15,7 +14,6 @@ app = FastAPI()
 
 OK = "OK"
 FALHA = "FALHA"
-
 
 @app.post("/usuario/", status_code=201, response_model=models.Usuario)
 async def criar_usuário(

@@ -1,7 +1,4 @@
 from os import environ
-from dotenv import load_dotenv
-
-load_dotenv()
 
 from motor.motor_asyncio import AsyncIOMotorClient
 
@@ -17,6 +14,7 @@ class DataBase:
 
 
 async def get_db():
+    print(environ.get("DATABASE_URI"))
     db = DataBase()
     try:
         await connect_db(db)
@@ -31,8 +29,6 @@ async def connect_db(db: DataBase):
         db.database_uri,
         maxPoolSize=10,
         minPoolSize=10,
-        tls=True,
-        tlsAllowInvalidCertificates=True,
     )
 
     db.users_collection = db.client.shopping_cart.users

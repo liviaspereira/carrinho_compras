@@ -1,0 +1,18 @@
+# Use root/example as user/password credentials
+version: "3.9"
+
+services:
+
+  mongo_carrinho:
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: "root"
+      MONGO_INITDB_ROOT_PASSWORD: "example"
+
+  carrinho:
+    image: carrinho
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URI: "mongodb://root:example@mongo_carrinho:27017/"
