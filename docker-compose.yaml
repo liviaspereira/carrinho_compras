@@ -14,5 +14,7 @@ services:
     image: carrinho
     ports:
       - "8000:8000"
+    depends_on:
+      - mongo_carrinho
     environment:
       DATABASE_URI: "mongodb://root:example@mongo_carrinho:27017/"
