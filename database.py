@@ -14,7 +14,6 @@ class DataBase:
 
 
 async def get_db():
-    print(environ.get("DATABASE_URI"))
     db = DataBase()
     try:
         await connect_db(db)

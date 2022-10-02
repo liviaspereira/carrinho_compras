@@ -1,8 +1,9 @@
-from pymongo.errors import PyMongoError
+from pymongo.errors import PyMongoError, DuplicateKeyError
 from fastapi import FastAPI, Depends, HTTPException
 import models
-from database import DataBase, get_db
 from mongo_adapter import (
+    get_user_adapter,
+    get_produto_adapter,
     ProductAdapter,
     UserAdapter,
     ObjetoNaoModificado,
@@ -18,11 +19,13 @@ FALHA = "FALHA"
 @app.post("/usuario/", status_code=201, response_model=models.Usuario)
 async def criar_usuário(
     usuario: models.Usuario,
-    adapter: UserAdapter = Depends(UserAdapter),
-    db: DataBase = Depends(get_db),
+    adapter: UserAdapter = Depends(get_user_adapter),
 ):
     try:
-        return await adapter.create(db.users_collection, usuario)
+        return await adapter.create(usuario)
+    except DuplicateKeyError:
+        raise HTTPException(status_code=409, detail="Usuário já existe")
+
     except Exception as e:
         raise HTTPException(status_code=400, detail="Falha ao inserir")
 
@@ -30,10 +33,9 @@ async def criar_usuário(
 @app.get("/usuario/{email}/", response_model=models.Usuario)
 async def retornar_usuario(
     email: EmailStr,
-    adapter: UserAdapter = Depends(UserAdapter),
-    db: DataBase = Depends(get_db),
+    adapter: UserAdapter = Depends(get_user_adapter),
 ):
-    usuario = await adapter.get(db.users_collection, email)
+    usuario = await adapter.get(email)
     if usuario is None:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
     return usuario
@@ -42,11 +44,10 @@ async def retornar_usuario(
 @app.delete("/usuario/", status_code=204)
 async def deletar_usuario(
     email: EmailStr,
-    adapter: UserAdapter = Depends(UserAdapter),
-    db: DataBase = Depends(get_db),
+    adapter: UserAdapter = Depends(get_user_adapter),
 ):
     try:
-        is_deleted = await adapter.delete(db.users_collection, email)
+        is_deleted = await adapter.delete(email)
         if not is_deleted:
             raise HTTPException(status_code=400, detail="Usuário não existe")
     except PyMongoError:
@@ -57,11 +58,10 @@ async def deletar_usuario(
 async def criar_endereco(
     email: EmailStr,
     endereco: models.Endereco,
-    adapter: UserAdapter = Depends(UserAdapter),
-    db: DataBase = Depends(get_db),
+    adapter: UserAdapter = Depends(get_user_adapter),
 ):
     try:
-        return await adapter.create_addr(db.users_collection, email, endereco)
+        return await adapter.create_addr(email, endereco)
 
     except ObjetoNaoEncontrado:
         raise HTTPException(status_code=404, detail="Usuário não encontado")
@@ -75,12 +75,11 @@ async def criar_endereco(
 async def deletar_endereco(
     endereco: models.Endereco,
     email: EmailStr,
-    adapter: UserAdapter = Depends(UserAdapter),
-    db: DataBase = Depends(get_db),
+    adapter: UserAdapter = Depends(get_user_adapter),
 ):
     try:
         is_deleted = await adapter.remover_endereco(
-            db.users_collection, endereco, email
+            endereco, email
         )
         if not is_deleted:
             raise HTTPException(status_code=400, detail="Endereço não existe")
@@ -93,11 +92,10 @@ async def deletar_endereco(
 )  # pega o retorno da função e converte para um models.Usuario
 async def criar_produto(
     produto: models.Produto,
-    adapter: ProductAdapter = Depends(ProductAdapter),
-    db: DataBase = Depends(get_db),
+    adapter: ProductAdapter = Depends(get_produto_adapter),
 ):
     try:
-        return await adapter.create(db.product_collection, produto)
+        return await adapter.create(produto)
     except Exception as e:
         raise HTTPException(status_code=400, detail="Falha ao inserir")
 
@@ -105,10 +103,9 @@ async def criar_produto(
 @app.get("/produto/{id_produto}/", response_model=models.Produto)
 async def retornar_produto(
     id_produto: int,
-    adapter: ProductAdapter = Depends(ProductAdapter),
-    db: DataBase = Depends(get_db),
+    adapter: ProductAdapter = Depends(get_produto_adapter),
 ):
-    produto = await adapter.get(db.product_collection, id_produto)
+    produto = await adapter.get(id_produto)
     if produto is None:
         raise HTTPException(status_code=404, detail="Produto não encontrado")
     return produto
@@ -117,11 +114,10 @@ async def retornar_produto(
 @app.delete("/produto/{id_produto}/", response_model=models.Produto)
 async def deletar_produto(
     id_produto: int,
-    adapter: ProductAdapter = Depends(ProductAdapter),
-    db: DataBase = Depends(get_db),
+    adapter: ProductAdapter = Depends(get_produto_adapter),
 ):
     try:
-        is_deleted = await adapter.delete(db.product_collection, id_produto)
+        is_deleted = await adapter.delete(id_produto)
         if not is_deleted:
             raise HTTPException(status_code=400, detail="Produto não existe")
     except PyMongoError:

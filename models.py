@@ -1,7 +1,6 @@
 from typing import List, Optional
 from pydantic import BaseModel, EmailStr, Field
 from decimal import Decimal
-from bson.objectid import ObjectId
 
 # Classe representando os dados do endereço do cliente
 class Endereco(BaseModel):
