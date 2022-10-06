@@ -5,9 +5,8 @@ from pydantic import BaseModel, EmailStr
 from motor.motor_asyncio import AsyncIOMotorCollection
 import models
 from fastapi import Depends
-from database import DataBase, get_db
-
-
+from carrinho.db.mondo_db import DataBase, get_db
+from carrinho.db.base import BaseAdapter
 
 class ObjetoNaoEncontrado(Exception):
     """Quando for feito uma update e o matched_count == 0"""
@@ -17,13 +16,11 @@ class ObjetoNaoModificado(Exception):
     """Quando o update for igual a um existente"""
 
 
-class BaseAdapter:
+class MongoBaseAdapter(BaseAdapter):
     def __init__(self, collection):
         self.collection = collection
 
-    async def create(
-        self, data: BaseModel
-    ) -> BaseModel:
+    async def create(self, data: BaseModel) -> BaseModel:
         try:
             await self.collection.insert_one(data.dict())
             return data
@@ -32,7 +29,7 @@ class BaseAdapter:
             raise
 
     async def update(
-        self, 
+        self,
         data: BaseModel,
         id: Any,
         key: str,
@@ -47,9 +44,7 @@ class BaseAdapter:
             raise ObjetoNaoModificado
         return data
 
-    async def get(
-        self, id: Any, key: str
-    ) -> BaseModel:
+    async def get(self, id: Any, key: str) -> BaseModel:
         try:
             data = await self.collection.find_one({key: id})
             return data
@@ -57,9 +52,7 @@ class BaseAdapter:
             logging.error(e)
             return
 
-    async def get_all(
-        self, skip: int = 0, limit: int = 10
-    ) -> List[BaseModel]:
+    async def get_all(self, skip: int = 0, limit: int = 10) -> List[BaseModel]:
         try:
             cursor = self.collection.find().skip(skip).limit(limit)
             data = await cursor.to_list(length=limit)
@@ -79,12 +72,8 @@ class BaseAdapter:
             raise
 
 
-class UserAdapter(BaseAdapter):
-
-
-    async def create(
-        self, data: models.Usuario
-    ) -> models.Usuario:
+class UserAdapter(MongoBaseAdapter):
+    async def create(self, data: models.Usuario) -> models.Usuario:
         return await super().create(data)
 
     async def create_addr(
@@ -92,25 +81,18 @@ class UserAdapter(BaseAdapter):
         email: EmailStr,
         endereco: models.Endereco,
     ) -> models.Usuario:
-        return await super().update(endereco, email, "email", update_key="endereco"
-        )
+        return await super().update(endereco, email, "email", update_key="endereco")
 
-    async def get(
-        self, email: EmailStr
-    ) -> models.Usuario:
+    async def get(self, email: EmailStr) -> models.Usuario:
         return await super().get(email, key="email")
 
-    async def get_all(
-        self, skip: int = 0, limit: int = 10
-    ) -> List[models.Usuario]:
+    async def get_all(self, skip: int = 0, limit: int = 10) -> List[models.Usuario]:
         return await super().get_all(skip=skip, limit=limit)
 
     async def delete(self, email: EmailStr):
         return await super().delete(email, key="email")
 
-    async def remover_endereco(
-        self, endereco: models.Endereco, email
-    ):
+    async def remover_endereco(self, endereco: models.Endereco, email):
         updated = await self.collection.update_one(
             {"email": email},
             {
@@ -131,15 +113,11 @@ class UserAdapter(BaseAdapter):
         return endereco
 
 
-class ProductAdapter(BaseAdapter):
-    async def create(
-        self, data: models.Produto
-    ) -> models.Produto:
+class ProductAdapter(MongoBaseAdapter):
+    async def create(self, data: models.Produto) -> models.Produto:
         return await super().create(data)
 
-    async def get(
-        self, id_produto: int
-    ) -> models.Produto:
+    async def get(self, id_produto: int) -> models.Produto:
         return await super().get(id_produto, key="id")
 
     async def delete(self, id_produto: int):
@@ -149,7 +127,7 @@ class ProductAdapter(BaseAdapter):
 async def get_user_adapter(db: DataBase = Depends(get_db)) -> UserAdapter:
     user_adapter = UserAdapter(db.users_collection)
     return user_adapter
-    
+
 
 async def get_produto_adapter(db: DataBase = Depends(get_db)) -> ProductAdapter:
     product_adapter = ProductAdapter(db.product_collection)

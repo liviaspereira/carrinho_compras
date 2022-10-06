@@ -1,7 +1,7 @@
 from pymongo.errors import PyMongoError, DuplicateKeyError
 from fastapi import FastAPI, Depends, HTTPException
-import models
-from mongo_adapter import (
+from carrinho import models
+from carrinho.db.mongo_adapter import (
     get_user_adapter,
     get_produto_adapter,
     ProductAdapter,
@@ -10,11 +10,17 @@ from mongo_adapter import (
     ObjetoNaoEncontrado,
 )
 from pydantic import EmailStr
+from sqlmodel import Session
+
+from carrinho.db.postgres_db import create_db_and_tables, engine, get_session
+from carrinho.schemas import Usuario, Endereco
+
 
 app = FastAPI()
 
 OK = "OK"
 FALHA = "FALHA"
+
 
 @app.post("/usuario/", status_code=201, response_model=models.Usuario)
 async def criar_usuário(
@@ -78,9 +84,7 @@ async def deletar_endereco(
     adapter: UserAdapter = Depends(get_user_adapter),
 ):
     try:
-        is_deleted = await adapter.remover_endereco(
-            endereco, email
-        )
+        is_deleted = await adapter.remover_endereco(endereco, email)
         if not is_deleted:
             raise HTTPException(status_code=400, detail="Endereço não existe")
     except PyMongoError as e:
@@ -186,3 +190,8 @@ async def deletar_carrinho(id_usuario: int):
 async def bem_vinda():
     site = "Seja bem vinda"
     return site.replace("\n", "")
+
+
+@app.on_event("startup")
+def on_startup():
+    create_db_and_tables()

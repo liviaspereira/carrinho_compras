@@ -28,7 +28,10 @@ class Produto(BaseModel):
 
 # Classe representando o carrinho de compras de um cliente com uma lista de produtos
 class CarrinhoDeCompras(BaseModel):
+
     id_usuario: int = Field(unique=True, index=True)
+
     id_produtos: List[Produto] = Field(default_factory=list)
+
     preco_total: float
     quantidade_de_produtos: int
