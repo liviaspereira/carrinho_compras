@@ -1,19 +1,14 @@
 import logging
-from pymongo.errors import DuplicateKeyError, PyMongoError
-from typing import List, Any
-from pydantic import BaseModel, EmailStr
-from motor.motor_asyncio import AsyncIOMotorCollection
+from typing import Any, List
+
 import models
 from fastapi import Depends
-from carrinho.db.mondo_db import DataBase, get_db
+from pydantic import BaseModel, EmailStr
+from pymongo.errors import DuplicateKeyError, PyMongoError
+
 from carrinho.db.base import BaseAdapter
-
-class ObjetoNaoEncontrado(Exception):
-    """Quando for feito uma update e o matched_count == 0"""
-
-
-class ObjetoNaoModificado(Exception):
-    """Quando o update for igual a um existente"""
+from carrinho.db.exception import ObjetoNaoEncontrado, ObjetoNaoModificado
+from carrinho.db.mondo_db import DataBase, get_db
 
 
 class MongoBaseAdapter(BaseAdapter):

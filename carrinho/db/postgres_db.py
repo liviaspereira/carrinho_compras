@@ -1,5 +1,6 @@
-from sqlmodel import create_engine, SQLModel, Session
 from os import environ
+
+from sqlmodel import Session, SQLModel, create_engine
 
 db_url = environ.get("DATABASE_URI")
 engine = create_engine(db_url)
@@ -12,5 +13,3 @@ def create_db_and_tables():
 def get_session():
     with Session(engine) as session:
         yield session
-
-

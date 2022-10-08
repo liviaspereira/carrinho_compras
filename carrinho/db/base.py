@@ -1,9 +1,9 @@
-from pydantic import BaseModel
 from typing import Any
+
+from pydantic import BaseModel
 
 
 class BaseAdapter:
-
     async def create(self, data: BaseModel) -> BaseModel:
         pass
 
