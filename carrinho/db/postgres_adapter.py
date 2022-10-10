@@ -150,7 +150,29 @@ class ProductAdapter(PostgresBaseAdapter):
         results = self.session.exec(statement)
         produto = results.one()
         return produto
+    
+    async def delete(self, id: int):
+        statement = select(Produto).where(Produto.id == id)
+        results = self.session.exec(statement)
+        produto = results.one()
+    
+        self.session.delete(produto)
+        self.session.commit()
 
+
+    async def update(self, id: int, data: models.ProdutoFilter) -> Produto: # data = aos produtos novos
+        statement = select(Produto).where(Produto.id == id)
+        results = self.session.exec(statement)
+        produto = results.one()
+        update_data = data.dict(exclude_none=True)
+        for key, value in update_data.items():
+            setattr(produto, key, value)
+        self.session.add(produto)
+        self.session.commit()
+
+        self.session.refresh(produto)
+        return produto
+        
 
 async def get_user_adapter(session: Session = Depends(get_session)) -> UserAdapter:
     user_adapter = UserAdapter(session)

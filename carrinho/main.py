@@ -1,8 +1,9 @@
 from fastapi import Depends, FastAPI, HTTPException
 from pydantic import EmailStr
 from sqlalchemy.exc import IntegrityError, NoResultFound
-
+from fastapi.encoders import jsonable_encoder
 from carrinho import models
+import logging
 from carrinho.db.postgres_adapter import (AddressAdapter, ProductAdapter,
                                           UserAdapter, get_address_adapter,
                                           get_product_adapter,
@@ -12,12 +13,15 @@ from carrinho.schemas import Endereco, Produto, Usuario
 
 app = FastAPI()
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 @app.post("/usuario/", status_code=201, response_model=Usuario)
 async def criar_usuário(
     usuario: Usuario,
     adapter: UserAdapter = Depends(get_user_adapter),
 ):
+    logger.info("Tentando criar cliente")
     try:
         return await adapter.create(usuario)
     except IntegrityError:
@@ -122,17 +126,29 @@ async def filtrar_produto(
         raise HTTPException(status_code=400, detail="Falha ao buscar")
 
 
-# @app.delete("/produto/{id_produto}/", response_model=models.Produto)
-# async def deletar_produto(
-#     id_produto: int,
-#     adapter: ProductAdapter = Depends(get_produto_adapter),
-# ):
-#     try:
-#         is_deleted = await adapter.delete(id_produto)
-#         if not is_deleted:
-#             raise HTTPException(status_code=400, detail="Produto não existe")
-#     except PyMongoError:
-#         raise HTTPException(status_code=400, detail="Falha ao deletar")
+@app.delete("/produto/{id_produto}/")
+async def deletar_produto(
+    id_produto: int,
+    adapter: ProductAdapter = Depends(get_product_adapter),
+):
+    try:
+        await adapter.delete(id_produto)
+    except NoResultFound:
+        raise HTTPException(status_code=404, detail="Produto não encontado")
+    except Exception:
+        raise HTTPException(status_code=400, detail="Falha ao deletar")
+
+
+@app.patch("/produto/{produto_id}", response_model=Produto)   
+async def update(produto_id: int, produto: models.ProdutoFilter, adapter: ProductAdapter = Depends(get_product_adapter)
+):
+    try:
+        return await adapter.update(produto_id, produto)
+    except NoResultFound:
+        raise HTTPException(status_code=404, detail="Produto não encontado")
+    except Exception:
+        raise HTTPException(status_code=400, detail="Falha ao atualizar")
+    
 
 
 # # Se não existir usuário com o id_usuario ou id_produto retornar falha,
